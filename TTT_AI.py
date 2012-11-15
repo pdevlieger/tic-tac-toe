@@ -98,25 +98,6 @@ class Computer:
 				result = score_by_scenario[0][0]
 		return result	
 	
-	def minimaxer(self, state):
-		plausible_moves = []
-		winner_move, optimal_move = None, None
-		for scenario in self.scenario_builder(state, self.computer_token):
-			game_over, p_win, c_win, message = self.evaluate_winner(scenario)
-			if c_win:
-				winner_move = scenario
-			else:
-				for subscenario in self.scenario_builder(scenario, self.player_token):
-					plausible_move = True
-					while plausible_move:
-						go_local, p_win_local, c_win_local, message_local = self.evaluate_winner(subscenario)
-						if p_win_local:
-							plausible_move = False
-				if plausible_move:
-					plausible_moves.append(scenario)
-				winner_move = plausible_moves[0]
-		return winner_move
-
 	def maximizer(self, state):
 		util = -2
 		game_over, p_win, c_win, message = self.evaluate_winner(state)
