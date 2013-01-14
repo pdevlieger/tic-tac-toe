@@ -1,6 +1,5 @@
 import random
 from copy import deepcopy
-import pdb
 
 class Player:
 	def __init__(self):
@@ -79,64 +78,52 @@ class Computer:
 		scenarios = self.scenario_builder(state, self.player_token)
 		return True in [self.evaluate_winner(scenario)[1]==True for scenario in scenarios]
 	
-	def minimax(self, state):
-		plausible_moves, score_by_scenario, winner, result = [], [], None, None
-		scenarios = self.scenario_builder(state, self.computer_token)
-		for scenario in scenarios:
-			c_win = self.evaluate_winner(scenario)[2]
-#			pdb.set_trace()
-			if c_win:
-				result = scenario
+	def maximization(self, state):
+		score_by_scenario = []
+		for scenario in self.scenario_builder(state, self.computer_token):
+			util = None
+			game_over, p_win, c_win, message = self.evaluate_winner(scenario)
+			if p_win:
+				util = -1
+			elif c_win:
+				util = 1
+			elif game_over:
+				util = 0
 			else:
-				if not self.opponent_winner_move(scenario):
-					plausible_moves.append(scenario)
-		if plausible_moves:
-			for move in plausible_moves:
-				score = self.maximizer(scenario)
-				score_by_scenario.append((scenario, score))
-				score_by_scenario.sort(key=lambda tup: tup[1])
-				result = score_by_scenario[0][0]
-		return result	
-	
-	def maximizer(self, state):
-		util = -2
-		game_over, p_win, c_win, message = self.evaluate_winner(state)
-		if c_win:
-			util = 1
-		elif p_win:
-			util = -1
-		elif not p_win and not c_win and game_over:
-			util = 0
-		else:
-			for scenario in self.scenario_builder(state, self.player_token):
-				util = max(util, self.minimizer(scenario))
-		return util
+				util = self.minimization(scenario)[0][1]
+			score_by_scenario.append((scenario, util))
+		score_by_scenario.sort(key=lambda tup: tup[1])
+		return score_by_scenario
 
-	def minimizer(self, state):
-		util = 2
-		game_over, p_win, c_win, message = self.evaluate_winner(state)
-		if c_win:
-			util = 1
-		elif p_win:
-			util = -1
-		elif not p_win and not c_win and game_over:
-			util = 0
-		else:
-			for scenario in self.scenario_builder(state, self.computer_token):
-				util = min(util, self.maximizer(scenario))
-		return util
+	def minimization(self, state):
+		score_by_scenario = []
+		for scenario in self.scenario_builder(state, self.player_token):
+			util = None
+			game_over, p_win, c_win, message = self.evaluate_winner(scenario)
+			if p_win:
+				util = -1
+			elif c_win:
+				util = 1
+			elif game_over:
+				util = 0
+			else:
+				util = self.maximization(scenario)[-1][1]
+			score_by_scenario.append((scenario, util))
+		score_by_scenario.sort(key=lambda tup: tup[1])
+		return score_by_scenario
 
 	def move(self, state):
 		if state[4] == " ":
 			state[4] = self.computer_token
+		elif self.computer_token not in state:
+			state[0] = self.computer_token
 		else:
-			state = self.minimax(state)
+			state = self.maximization(state)[-1][0]
 		return state
 
-# Setting up some building stones. I should write this with a __main__
 running = True
 message = None
-game_entries = [" ", ]*9
+game_entries = [" "]*9
 
 player = Player()
 computer = Computer()
@@ -144,7 +131,6 @@ player_token = computer.player_token
 player_turn = computer.player_picks
 
 while running:
-	pdb.set_trace()
 	print "\n" + "\n----------\n".join([" | ".join([game_entries[3*i+j] for j in range(3)]) for i in range(3)]) + "\n"
 	game_over, p_win, c_win, message = computer.evaluate_winner(game_entries)
 	if game_over:
